@@ -1,6 +1,10 @@
 const express = require('express');
+const path = require('path');
 const { exec, spawn } = require('child_process');
 const app = express();
+
+// Caminho para arquivos estáticos (funciona no pkg e no node normal)
+const publicPath = path.join(__dirname, 'public');
 
 // Tenta importar qrcode-terminal (instale com: npm install qrcode-terminal)
 let qrcode;
@@ -11,7 +15,7 @@ try {
 }
 
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(publicPath));
 
 // Função para digitar o código automaticamente no PC
 function typeCodeOnPC(code) {

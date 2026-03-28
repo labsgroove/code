@@ -1,10 +1,13 @@
 {
-  "name": "code",
+  "name": "barcode-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Servidor de código de barras para PC",
+  "main": "server.js",
+  "bin": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "build": "npx pkg . --targets node18-win-x64 --output dist/barcode-server.exe",
+    "build-all": "npx pkg . --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output dist/barcode-server"
   },
   "keywords": [],
   "author": "",
@@ -12,7 +15,14 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1",
-    "qrcode-terminal": "^0.12.0",
-    "ws": "^8.20.0"
+    "qrcode-terminal": "^0.12.0"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*"
+    ],
+    "scripts": [
+      "server.js"
+    ]
   }
 }
