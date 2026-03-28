@@ -5,6 +5,8 @@ const flash = document.getElementById('flash');
 let lastCode = '';
 let scanCount = 0;
 let isProcessing = false;
+let isScanning = true;
+let scanAgainBtn = null;
 let scanHistory = [];
 const SCAN_HISTORY_SIZE = 3;
 const CONFIDENCE_THRESHOLD = 0.25;
@@ -95,12 +97,49 @@ function onScanSuccess(code, format = 'unknown') {
     navigator.vibrate([50, 100, 50]);
   }
   
-  // Limpa após 3 segundos para permitir novo scan
-  setTimeout(() => {
+  // Pausa a captura
+  pauseScanning();
+  
+  // Mostra botão para escanear novamente
+  showScanAgainButton();
+}
+
+function pauseScanning() {
+  if (isScanning) {
+    Quagga.stop();
+    isScanning = false;
+    statusText.textContent = 'Código detectado - Scan pausado';
+    statusText.style.color = '#f59e0b';
+  }
+}
+
+function resumeScanning() {
+  if (!isScanning) {
     lastCode = '';
+    scanHistory = [];
+    Quagga.start();
+    isScanning = true;
     statusText.textContent = 'Camera ativa - Pronto para scan';
     statusText.style.color = '#888';
-  }, 3000);
+    hideScanAgainButton();
+  }
+}
+
+function showScanAgainButton() {
+  if (!scanAgainBtn) {
+    scanAgainBtn = document.createElement('button');
+    scanAgainBtn.id = 'scan-again-btn';
+    scanAgainBtn.textContent = 'Escanear Novamente';
+    scanAgainBtn.onclick = resumeScanning;
+    document.querySelector('.result-section').appendChild(scanAgainBtn);
+  }
+  scanAgainBtn.style.display = 'block';
+}
+
+function hideScanAgainButton() {
+  if (scanAgainBtn) {
+    scanAgainBtn.style.display = 'none';
+  }
 }
 
 Quagga.init({
