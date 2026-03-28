@@ -1,0 +1,11 @@
+{
+  "name": "Scanner Mobile Pro",
+  "short_name": "Scanner",
+  "description": "Scanner de códigos de barras profissional",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#00d4ff",
+  "orientation": "portrait",
+  "icons": []
+}
