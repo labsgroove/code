@@ -5,6 +5,31 @@ const flash = document.getElementById('flash');
 let lastCode = '';
 let scanCount = 0;
 let isProcessing = false;
+let scanHistory = [];
+const SCAN_HISTORY_SIZE = 3;
+const CONFIDENCE_THRESHOLD = 0.25;
+
+function validateCode(code) {
+  if (!code || code.length < 4) return false;
+  return /^[a-zA-Z0-9\-\.\s]+$/.test(code);
+}
+
+function getConsistentCode(code) {
+  scanHistory.push(code);
+  if (scanHistory.length > SCAN_HISTORY_SIZE) {
+    scanHistory.shift();
+  }
+  
+  const counts = {};
+  for (const c of scanHistory) {
+    counts[c] = (counts[c] || 0) + 1;
+  }
+  
+  for (const [c, count] of Object.entries(counts)) {
+    if (count >= 2) return c;
+  }
+  return null;
+}
 
 // AudioContext para beep
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -74,19 +99,13 @@ Quagga.init({
     target: document.querySelector('#camera'),
     constraints: {
       facingMode: "environment",
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
-    },
-    area: {
-      top: "20%",
-      right: "10%",
-      left: "10%",
-      bottom: "20%"
+      width: { min: 640, ideal: 1920, max: 2560 },
+      height: { min: 480, ideal: 1080, max: 1440 }
     }
   },
   locator: {
-    patchSize: "medium",
-    halfSample: true
+    patchSize: "large",
+    halfSample: false
   },
   numOfWorkers: navigator.hardwareConcurrency || 4,
   frequency: 5,
@@ -107,13 +126,21 @@ Quagga.init({
   locate: true
 }, function(err) {
   if (err) {
-    console.error(err);
-    statusText.textContent = 'Erro na camera: ' + err.message;
+    console.error('Erro ao inicializar Quagga:', err);
+    statusText.textContent = 'Erro na camera: ' + (err.message || err);
     statusText.style.color = '#ef4444';
     return;
   }
-  Quagga.start();
-  statusText.textContent = 'Camera ativa - Pronto para scan';
+  
+  try {
+    Quagga.start();
+    statusText.textContent = 'Camera ativa - Pronto para scan';
+    console.log('Quagga iniciado com sucesso');
+  } catch (e) {
+    console.error('Erro ao iniciar Quagga:', e);
+    statusText.textContent = 'Erro ao iniciar: ' + e.message;
+    statusText.style.color = '#ef4444';
+  }
 });
 
 Quagga.onDetected(function(result) {
@@ -121,14 +148,19 @@ Quagga.onDetected(function(result) {
   const confidence = result.codeResult.confidence || 0;
   const format = result.codeResult.format;
   
-  // Debug no console
   console.log('Detectado:', code, 'Confiança:', confidence.toFixed(2), 'Formato:', format);
   
-  // Aceita códigos com confiança razoável (0.5 = 50%)
-  if (confidence > 0.5) {
+  // Validação básica - aceita se tem tamanho mínimo
+  if (!code || code.length < 4) {
+    console.log('Código muito curto:', code);
+    return;
+  }
+  
+  // Aceita código detectado (evita duplicados apenas)
+  if (code !== lastCode) {
+    console.log('Scan confirmado:', code);
     onScanSuccess(code);
   } else {
-    statusText.textContent = 'Tentando ler... (' + confidence.toFixed(2) + ')';
-    statusText.style.color = '#f59e0b';
+    console.log('Código duplicado ignorado:', code);
   }
 });
