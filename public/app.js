@@ -58,7 +58,7 @@ function triggerFlash() {
   setTimeout(() => flash.classList.remove('active'), 100);
 }
 
-function onScanSuccess(code) {
+function onScanSuccess(code, format = 'unknown') {
   // Evita scans duplicados consecutivos imediatos
   if (code === lastCode) {
     return;
@@ -73,6 +73,16 @@ function onScanSuccess(code) {
   
   statusText.textContent = 'Código: ' + code;
   statusText.style.color = '#22c55e';
+  
+  // Envia para o servidor
+  fetch('/scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, format, timestamp: Date.now() })
+  })
+  .then(res => res.json())
+  .then(data => console.log('Enviado ao servidor:', data))
+  .catch(err => console.error('Erro ao enviar:', err));
   
   // Beep sonoro
   playBeep();
@@ -159,7 +169,7 @@ Quagga.onDetected(function(result) {
   // Aceita código detectado (evita duplicados apenas)
   if (code !== lastCode) {
     console.log('Scan confirmado:', code);
-    onScanSuccess(code);
+    onScanSuccess(code, format);
   } else {
     console.log('Código duplicado ignorado:', code);
   }
