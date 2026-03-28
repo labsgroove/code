@@ -2,6 +2,7 @@ const input = document.getElementById('barcode');
 const statusText = document.getElementById('status-text');
 const flash = document.getElementById('flash');
 
+let quaggaConfig = null;
 let lastCode = '';
 let scanCount = 0;
 let isProcessing = false;
@@ -114,15 +115,60 @@ function pauseScanning() {
 }
 
 function resumeScanning() {
+  console.log('Tentando retomar scanning... isScanning=', isScanning);
   if (!isScanning) {
     lastCode = '';
     scanHistory = [];
-    Quagga.start();
-    isScanning = true;
-    statusText.textContent = 'Camera ativa - Pronto para scan';
-    statusText.style.color = '#888';
-    hideScanAgainButton();
+    try {
+      // Tenta reiniciar o Quagga
+      Quagga.start();
+      isScanning = true;
+      statusText.textContent = 'Camera ativa - Pronto para scan';
+      statusText.style.color = '#888';
+      hideScanAgainButton();
+      console.log('Camera reiniciada com sucesso');
+    } catch (e) {
+      console.error('Erro ao retomar scanning:', e);
+      // Se falhar, tenta re-inicializar completamente
+      statusText.textContent = 'Reiniciando camera...';
+      reinitQuagga();
+    }
+  } else {
+    console.log('Scanning já está ativo');
   }
+}
+
+function reinitQuagga() {
+  console.log('Re-inicializando Quagga...');
+  try {
+    Quagga.stop();
+  } catch(e) { /* ignora erro ao parar */ }
+  
+  // Aguarda um pouco e reinicia
+  setTimeout(() => {
+    if (quaggaConfig) {
+      Quagga.init(quaggaConfig, function(err) {
+        if (err) {
+          console.error('Erro ao re-inicializar:', err);
+          statusText.textContent = 'Erro ao reiniciar: ' + (err.message || err);
+          statusText.style.color = '#ef4444';
+          return;
+        }
+        try {
+          Quagga.start();
+          isScanning = true;
+          statusText.textContent = 'Camera ativa - Pronto para scan';
+          statusText.style.color = '#888';
+          hideScanAgainButton();
+          console.log('Quagga re-inicializado com sucesso');
+        } catch (e) {
+          console.error('Erro ao iniciar após reinit:', e);
+          statusText.textContent = 'Erro: ' + e.message;
+          statusText.style.color = '#ef4444';
+        }
+      });
+    }
+  }, 500);
 }
 
 function showScanAgainButton() {
@@ -130,8 +176,13 @@ function showScanAgainButton() {
     scanAgainBtn = document.createElement('button');
     scanAgainBtn.id = 'scan-again-btn';
     scanAgainBtn.textContent = 'Escanear Novamente';
-    scanAgainBtn.onclick = resumeScanning;
+    scanAgainBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Botão clicado!');
+      resumeScanning();
+    });
     document.querySelector('.result-section').appendChild(scanAgainBtn);
+    console.log('Botão criado e adicionado');
   }
   scanAgainBtn.style.display = 'block';
 }
@@ -142,7 +193,7 @@ function hideScanAgainButton() {
   }
 }
 
-Quagga.init({
+quaggaConfig = {
   inputStream: {
     type: "LiveStream",
     target: document.querySelector('#camera'),
@@ -173,7 +224,9 @@ Quagga.init({
     multiple: false
   },
   locate: true
-}, function(err) {
+};
+
+Quagga.init(quaggaConfig, function(err) {
   if (err) {
     console.error('Erro ao inicializar Quagga:', err);
     statusText.textContent = 'Erro na camera: ' + (err.message || err);
