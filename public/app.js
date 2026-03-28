@@ -74,22 +74,22 @@ Quagga.init({
     target: document.querySelector('#camera'),
     constraints: {
       facingMode: "environment",
-      width: { ideal: 1920 },
-      height: { ideal: 1080 }
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
     },
     area: {
-      top: "25%",
-      right: "12%",
-      left: "12%",
-      bottom: "25%"
+      top: "20%",
+      right: "10%",
+      left: "10%",
+      bottom: "20%"
     }
   },
   locator: {
-    patchSize: "large",
-    halfSample: false
+    patchSize: "medium",
+    halfSample: true
   },
   numOfWorkers: navigator.hardwareConcurrency || 4,
-  frequency: 10,
+  frequency: 5,
   decoder: {
     readers: [
       "code_128_reader",
@@ -124,8 +124,8 @@ Quagga.onDetected(function(result) {
   // Debug no console
   console.log('Detectado:', code, 'Confiança:', confidence.toFixed(2), 'Formato:', format);
   
-  // Aceita códigos com confiança razoável (0.6 = 60%)
-  if (confidence > 0.6) {
+  // Aceita códigos com confiança razoável (0.5 = 50%)
+  if (confidence > 0.5) {
     onScanSuccess(code);
   } else {
     statusText.textContent = 'Tentando ler... (' + confidence.toFixed(2) + ')';
